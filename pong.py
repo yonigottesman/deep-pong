@@ -1,23 +1,27 @@
 import random
-
+from Direction import Direction
 import pygame
+
+from PlayerTracker import PlayerTracker
+from State import State
+from PlayerHuman import PlayerHuman
 
 
 class Paddle(pygame.Rect):
-    def __init__(self, velocity, up_key, down_key, *args, **kwargs):
+    def __init__(self, velocity,player, *args, **kwargs):
         self.velocity = velocity
-        self.up_key = up_key
-        self.down_key = down_key
+        self.player = player
         super().__init__(*args, **kwargs)
 
-    def move_paddle(self, board_height):
-        keys_pressed = pygame.key.get_pressed()
+    def move_paddle(self, board_height, ball):
+        direction = self.player.get_move(State(pygame, ball_location=(ball.x, ball.y),
+                                               paddle_location=(self.x, self.y)))
 
-        if keys_pressed[self.up_key]:
+        if direction is Direction.UP:
             if self.y - self.velocity > 0:
                 self.y -= self.velocity
 
-        if keys_pressed[self.down_key]:
+        if direction is Direction.DOWN:
             if self.y + self.velocity < board_height - self.height:
                 self.y += self.velocity
 
@@ -49,7 +53,7 @@ class Pong:
 
     COLOUR = (255, 255, 255)
 
-    def __init__(self):
+    def __init__(self, player_a, player_b):
         self.paddles = []
         pygame.init()  # Start the pygame instance.
         self.central_line = pygame.Rect(self.WIDTH / 2, 0, 1, self.HEIGHT)
@@ -62,13 +66,15 @@ class Pong:
         self.score_a = 0
         self.score_b = 0
 
+        self.player_a = player_a
+        self.player_b = player_b
+
     def init_objects(self):
         # Create the player objects.
 
         self.paddle_a = Paddle(  # The left paddle
             self.VELOCITY,
-            pygame.K_w,
-            pygame.K_s,
+            player_a,
             0,
             self.HEIGHT / 2 - self.PADDLE_HEIGHT / 2,
             self.PADDLE_WIDTH,
@@ -77,8 +83,7 @@ class Pong:
 
         self.paddle_b = Paddle(  # The right paddle
             self.VELOCITY,
-            pygame.K_UP,
-            pygame.K_DOWN,
+            player_b,
             self.WIDTH - self.PADDLE_WIDTH,
             self.HEIGHT / 2 - self.PADDLE_HEIGHT / 2,
             self.PADDLE_WIDTH,
@@ -86,7 +91,7 @@ class Pong:
         )
         self.paddles.append(self.paddle_a)
         self.paddles.append(self.paddle_b)
-        
+
         self.ball = Ball(
             self.VELOCITY,
             self.WIDTH / 2 - self.BALL_WIDTH / 2,
@@ -133,15 +138,15 @@ class Pong:
             # Redraw the screen.
             self.screen.fill((0, 0, 0))
 
-            self.paddle_a.move_paddle(self.HEIGHT)
+            self.paddle_a.move_paddle(self.HEIGHT, self.ball)
             pygame.draw.rect(self.screen, self.COLOUR, self.paddle_a)
 
-            self.paddle_b.move_paddle(self.HEIGHT)
+            self.paddle_b.move_paddle(self.HEIGHT, self.ball)
             pygame.draw.rect(self.screen, self.COLOUR, self.paddle_b)
-
 
             self.ball.move_ball()
             pygame.draw.rect(self.screen, self.COLOUR, self.ball)
+
             pygame.draw.rect(self.screen, self.COLOUR, self.central_line)
 
             # Display scores:
@@ -152,9 +157,13 @@ class Pong:
             self.screen.blit(text, (self.WIDTH / 4 * 3, 10))
 
             pygame.display.flip()
-            self.clock.tick(60)
+            self.clock.tick(6000)
 
 
 if __name__ == '__main__':
-    pong = Pong()
+    # player_a = PlayerHuman(pygame.K_w, pygame.K_s)
+    player_a = PlayerTracker()
+    # player_b = PlayerHuman(pygame.K_UP, pygame.K_DOWN)
+    player_b = PlayerTracker()
+    pong = Pong(player_a, player_b)
     pong.game_loop()
