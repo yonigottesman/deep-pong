@@ -34,14 +34,18 @@ class Ball(pygame.Rect):
 
 
 class Pong:
-    HEIGHT = 800
-    WIDTH = 1600
+    # Define some colors
+    BLACK = (0, 0, 0)
+    WHITE = (255, 255, 255)
+
+    HEIGHT = 700
+    WIDTH = 500
 
     PADDLE_WIDTH = 10
     PADDLE_HEIGHT = 100
 
     BALL_WIDTH = 10
-    BALL_VELOCITY = 10
+    VELOCITY = 10
 
     COLOUR = (255, 255, 255)
 
@@ -52,11 +56,17 @@ class Pong:
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         self.clock = pygame.time.Clock()
         
+        self.init_objects()
+
+        self.score_a = 0
+        self.score_b = 0
+
+    def init_objects(self):
         # Create the player objects.
         self.paddles = []
         self.balls = []
         self.paddles.append(Paddle(  # The left paddle
-            self.BALL_VELOCITY,
+            self.VELOCITY,
             pygame.K_w,
             pygame.K_s,
             0,
@@ -66,7 +76,7 @@ class Pong:
         ))
 
         self.paddles.append(Paddle(  # The right paddle
-            self.BALL_VELOCITY,
+            self.VELOCITY,
             pygame.K_UP,
             pygame.K_DOWN,
             self.WIDTH - self.PADDLE_WIDTH,
@@ -76,17 +86,27 @@ class Pong:
         ))
 
         self.balls.append(Ball(
-            self.BALL_VELOCITY,
+            self.VELOCITY,
             self.WIDTH / 2 - self.BALL_WIDTH / 2,
             self.HEIGHT / 2 - self.BALL_WIDTH / 2,
             self.BALL_WIDTH,
             self.BALL_WIDTH
         ))
 
+
+    def update_losers(self):
+        for ball in self.balls:
+            if ball.x > self.WIDTH:
+                self.score_a = self.score_a + 1
+                return True
+            if ball.x < 0:
+                self.score_b = self.score_b + 1
+                return True
+        return False
+
+
     def check_ball_hits_wall(self):
         for ball in self.balls:
-            if ball.x > self.WIDTH or ball.x < 0:
-                sys.exit(1)
             if ball.y > self.HEIGHT - self.BALL_WIDTH or ball.y < 0:
                 ball.angle = -ball.angle
 
@@ -105,6 +125,10 @@ class Pong:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     return
 
+            if self.update_losers():
+                self.init_objects()
+                continue
+                
             self.check_ball_hits_paddle()
             self.check_ball_hits_wall()
 
@@ -119,6 +143,14 @@ class Pong:
                 ball.move_ball()
                 pygame.draw.rect(self.screen, self.COLOUR, ball)
             pygame.draw.rect(self.screen, self.COLOUR, self.central_line)
+
+            # Display scores:
+            font = pygame.font.Font(None, 74)
+            text = font.render(str(self.score_a), 1, self.WHITE)
+            self.screen.blit(text, (self.WIDTH/4, 10))
+            text = font.render(str(self.score_b), 1, self.WHITE)
+            self.screen.blit(text, (self.WIDTH/4*3, 10))
+
             pygame.display.flip()
             self.clock.tick(60)
 
