@@ -166,7 +166,7 @@ class Pong:
             self.check_ball_hits_paddle()
             self.check_ball_hits_wall()
 
-            image_data = pygame.surfarray.array3d(pygame.display.get_surface()).astype(np.uint8)[:, :, 0]
+            image_data = pygame.surfarray.array3d(pygame.display.get_surface()).astype(np.uint8)
 
             # Redraw the screen.
             self.screen.fill((0, 0, 0))
