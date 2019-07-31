@@ -6,9 +6,9 @@ class PlayerTracker:
         pass
 
     def get_move(self, state):
-        if state.paddle_location[1] + 50 < state.ball_location[1]:
+        if state.paddle_location[1] < state.ball_location[1]:
             return Direction.DOWN
-        if state.paddle_location[1] + 50 > state.ball_location[1]:
+        if state.paddle_location[1] > state.ball_location[1]:
             return Direction.UP
         else:
             return Direction.STAY

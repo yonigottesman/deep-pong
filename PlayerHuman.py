@@ -1,7 +1,7 @@
 from Direction import Direction
 
 
-class PlayerHuman():
+class PlayerHuman:
     def __init__(self, up_key, down_key):
         self.up_key = up_key
         self.down_key = down_key
