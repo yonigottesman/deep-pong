@@ -61,6 +61,7 @@ batch_size = 10
 
 
 model = Brain(80 * 80, hidden_layer_size, 1)
+model.to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 loss_computator = torch.nn.BCELoss(reduction='none')
 
