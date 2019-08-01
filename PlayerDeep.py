@@ -25,7 +25,7 @@ class Brain(torch.nn.Module):
 
 # from Karpathy's post, preprocessing function
 def prepro(I):
-    I = I[::4, ::4, 0]  # downsample by factor of 2.
+    I = I[::2, ::2, 0]  # downsample by factor of 2.
     I[I != 0] = 1
     return I.astype(np.float).ravel()  # ravel flattens an array and collapses it into a column vector
 
@@ -54,11 +54,12 @@ def normalize_rewards(r):
     discounted_epr /= np.std(discounted_epr)
     return discounted_epr
 
+
 class PlayerDeep:
     EPISODE_LEN = 21
 
     def __init__(self):
-        self.model = Brain(100 * 100, hidden_layer_size, 1)
+        self.model = Brain(80 * 80, hidden_layer_size, 1)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
         self.loss_computator = torch.nn.BCELoss(reduction='none')
         self.episode_len = self.EPISODE_LEN
@@ -72,6 +73,10 @@ class PlayerDeep:
         self.rewards = []
 
         self.running_reward = None
+
+        # Use this to count episodes
+        self.wins = 0
+        self.loses = 0
 
     def get_move(self, state):
 
@@ -106,7 +111,7 @@ class PlayerDeep:
                 self.optimizer.zero_grad()
 
             # reset episode state
-            self.fake_labels, self.p_ups, self.rewards, self.observations = [], [], [], []
+            self.fake_labels, self.p_ups, self.rewards = [], [], []
             self.prev_x = None
 
         cur_x = prepro(state.image_data)

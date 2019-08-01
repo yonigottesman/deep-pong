@@ -53,15 +53,15 @@ class Pong:
     BLACK = (0, 0, 0)
     WHITE = (255, 255, 255)
 
-    HEIGHT = 400
-    WIDTH = 400
+    HEIGHT = 160
+    WIDTH = 160
 
     PADDLE_WIDTH = 10
     PADDLE_HEIGHT = 60
-    PADDLE_SPEED = 8
+    PADDLE_SPEED = 20
 
     BALL_WIDTH = 10
-    BALL_X_SPEED = 12
+    BALL_X_SPEED = 20
     BALL_Y_SPEED = 8
     VELOCITY = 10
 
@@ -149,7 +149,9 @@ class Pong:
                 break
 
     def game_loop(self):
-        while True:
+
+        for i in range(1000):
+            print(i)
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     return
@@ -187,14 +189,14 @@ class Pong:
             pygame.draw.rect(self.screen, self.WHITE, self.central_line)
 
             # Display scores:
-            font = pygame.font.Font(None, 74)
-            text = font.render(str(self.score_a), 1, self.WHITE)
-            self.screen.blit(text, (self.WIDTH / 4, 10))
-            text = font.render(str(self.score_b), 1, self.WHITE)
-            self.screen.blit(text, (self.WIDTH / 4 * 3, 10))
+            # font = pygame.font.Font(None, 74)
+            # text = font.render(str(self.score_a), 1, self.WHITE)
+            # self.screen.blit(text, (self.WIDTH / 4, 10))
+            # text = font.render(str(self.score_b), 1, self.WHITE)
+            # self.screen.blit(text, (self.WIDTH / 4 * 3, 10))
 
             pygame.display.flip()
-            self.clock.tick_busy_loop(60)
+            # self.clock.tick_busy_loop(60)
 
 
 if __name__ == '__main__':
