@@ -32,6 +32,7 @@ def discount_rewards(r):
         if r[t] != 0: running_add = 0  # reset the sum, since this was a game boundary (pong specific!)
         running_add = running_add * gamma + r[t]
         discounted_r[t] = running_add
+
     return discounted_r
 
 
@@ -59,15 +60,14 @@ lr = 1e-4
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 batch_size = 10
 
-
 model = Brain(80 * 80, hidden_layer_size, 1)
 model.to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 loss_computator = torch.nn.BCELoss(reduction='none')
-
+optimizer.zero_grad()
 
 while True:
-    #env.render()
+    # env.render()
 
     # preprocess the observation, set input to network to be difference image
     cur_x = prepro(observation)
@@ -80,7 +80,7 @@ while True:
     p_ups.append(aprob)
     action = 2 if np.random.uniform() < aprob else 3  # roll the dice!
 
-    y = 1 if action == 2 else 0  # a "fake label"
+    y = 1.0 if action == 2 else 0.0  # a "fake label"
     fake_lables.append(y)
     observation, reward, done, info = env.step(env.action_space.sample())  # take a random action
     reward_sum += reward
@@ -90,7 +90,6 @@ while True:
         episode_number += 1
         # stack together all inputs, hidden states, action gradients, and rewards for this episode
         epr = np.vstack(drs)
-
 
         # compute the discounted reward backwards through time
         discounted_epr = discount_rewards(epr)
@@ -112,13 +111,14 @@ while True:
         loss = torch.mean(losses)
 
         loss.backward(torch.tensor(1.0 / batch_size).to(device))
+        # loss.backward()
 
         if episode_number % batch_size == 0:
             optimizer.step()
             optimizer.zero_grad()
 
         running_reward = reward_sum if running_reward is None else running_reward * 0.99 + reward_sum * 0.01
-        print('episode: {} reward total was {}.'.format(episode_number,reward_sum))
+        print('episode: {} reward total was {}.'.format(episode_number, reward_sum))
         if episode_number % 100 == 0: torch.save(model, './model.torch')
         fake_lables, drs, p_ups = [], [], []  # reset array memory
         observation = env.reset()  # reset env
