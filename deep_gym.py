@@ -82,7 +82,8 @@ while True:
 
     y = 1.0 if action == 2 else 0.0  # a "fake label"
     fake_lables.append(y)
-    observation, reward, done, info = env.step(env.action_space.sample())  # take a random action
+
+    observation, reward, done, info = env.step(action)  # take a random action
     reward_sum += reward
     drs.append(reward)  # record reward (has to be done after we call step() to get reward for previous action)
 
