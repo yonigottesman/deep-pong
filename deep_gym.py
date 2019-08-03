@@ -83,7 +83,7 @@ while True:
     y = 1.0 if action == 2 else 0.0  # a "fake label"
     fake_lables.append(y)
 
-    observation, reward, done, info = env.step(action)  # take a random action
+    observation, reward, done, info = env.step(action)
     reward_sum += reward
     drs.append(reward)  # record reward (has to be done after we call step() to get reward for previous action)
 
@@ -118,8 +118,11 @@ while True:
             optimizer.step()
             optimizer.zero_grad()
 
+        # boring book-keeping
         running_reward = reward_sum if running_reward is None else running_reward * 0.99 + reward_sum * 0.01
-        print('episode: {} reward total was {}.'.format(episode_number, reward_sum))
+        print('resetting env. episode {} reward total was {}. running mean: {}'.format(episode_number,
+                                                                                       reward_sum, running_reward))
+
         if episode_number % 100 == 0: torch.save(model, './model.torch')
         fake_lables, drs, p_ups = [], [], []  # reset array memory
         observation = env.reset()  # reset env
