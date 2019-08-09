@@ -103,19 +103,19 @@ while True:
         # First create tensor from discounter_epr
         t_discounted_epr = torch.from_numpy(discounted_epr).squeeze(1).float().to(device)
 
-        # losses = loss_computator(Y_hat, Y)
+        losses = loss_computator(Y_hat, Y)
 
         # # Multiply each log(yi|xi) with Ai (Advantage)
-        #losses *= t_discounted_epr
-        # loss = torch.mean(losses)
+        losses *= t_discounted_epr
+        loss = torch.mean(losses)
 
 
-        losses2 = (1-Y)*torch.log(1-Y_hat)+Y*torch.log(Y_hat)
-        losses2 *= t_discounted_epr
-        loss2 = torch.sum(losses2) / batch_size
+        # losses2 = -(1-Y)*torch.log(1-Y_hat)+Y*torch.log(Y_hat)
+        # losses2 *= t_discounted_epr
+        # loss2 = torch.sum(losses2) / batch_size
 
-        # loss = loss / batch_size # Normalize loss because of accumulated gradients
-        loss2.backward()
+        loss = loss / batch_size # Normalize loss because of accumulated gradients
+        loss.backward()
         if episode_number % batch_size == 0:
             optimizer.step()
             optimizer.zero_grad()
