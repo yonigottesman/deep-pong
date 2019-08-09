@@ -129,7 +129,7 @@ while True:
         print('resetting env. episode {} reward total was {}. running mean: {}'.format(episode_number,
                                                                                        reward_sum, running_reward))
 
-        if episode_number % 10 == 0:
+        if episode_number % 100 == 0:
             torch.save({
                 'model_state_dict': model.state_dict(),
             }, MODEL_PATH)
