@@ -8,7 +8,6 @@ class Brain(torch.nn.Module):
         super(Brain, self).__init__()
         self.linear1 = torch.nn.Linear(D_in, H)
         self.linear2 = torch.nn.Linear(H, D_out)
-        # how to init? xavier?
 
         # add regularization?
         # add batch norm
@@ -59,10 +58,10 @@ hidden_layer_size = 200
 lr = 3e-3
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 batch_size = 10
-
+weight_decay = 0
 model = Brain(80 * 80, hidden_layer_size, 1)
 model.to(device)
-optimizer = torch.optim.RMSprop(model.parameters(), lr=lr)
+optimizer = torch.optim.RMSprop(model.parameters(), lr=lr, weight_decay=weight_decay)
 loss_computator = torch.nn.BCELoss(reduction='none')
 optimizer.zero_grad()
 
@@ -104,13 +103,19 @@ while True:
         # First create tensor from discounter_epr
         t_discounted_epr = torch.from_numpy(discounted_epr).squeeze(1).float().to(device)
 
-        losses = loss_computator(Y_hat, Y)
+        # losses = loss_computator(Y_hat, Y)
 
         # # Multiply each log(yi|xi) with Ai (Advantage)
-        losses *= t_discounted_epr
-        loss = torch.mean(losses)
-        loss = loss / batch_size # Normalize loss because of accumulated gradients
-        loss.backward()
+        #losses *= t_discounted_epr
+        # loss = torch.mean(losses)
+
+
+        losses2 = (1-Y)*torch.log(1-Y_hat)+Y*torch.log(Y_hat)
+        losses2 *= t_discounted_epr
+        loss2 = torch.sum(losses2) / batch_size
+
+        # loss = loss / batch_size # Normalize loss because of accumulated gradients
+        loss2.backward()
         if episode_number % batch_size == 0:
             optimizer.step()
             optimizer.zero_grad()
@@ -127,3 +132,11 @@ while True:
         reward_sum = 0
 
 env.close()
+
+
+# RMSprop 3e-3 628 - 16.16 mean
+
+
+# try 1e-1 or 1e-2 as wd in adam
+# add another layer to network
+# conv network
