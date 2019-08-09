@@ -1,7 +1,7 @@
 import gym
 import numpy as np
 import torch
-
+import torch.nn.functional as F
 
 class Brain(torch.nn.Module):
     def __init__(self, D_in, H, D_out):
@@ -53,16 +53,16 @@ reward_sum = 0
 episode_number = 0
 env = gym.make('Pong-v0')
 observation = env.reset()
-
+GAMMA = 0.99
 # hyperparam
 hidden_layer_size = 200
-lr = 1e-4
+lr = 3e-3
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 batch_size = 10
 
 model = Brain(80 * 80, hidden_layer_size, 1)
 model.to(device)
-optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+optimizer = torch.optim.RMSprop(model.parameters(), lr=lr)
 loss_computator = torch.nn.BCELoss(reduction='none')
 optimizer.zero_grad()
 
@@ -76,7 +76,7 @@ while True:
 
     # make tensor
     x = torch.from_numpy(x).float().to(device)
-    aprob = model(x)
+    aprob = model.forward(x)
     p_ups.append(aprob)
     action = 2 if np.random.uniform() < aprob else 3  # roll the dice!
 
@@ -101,19 +101,16 @@ while True:
         Y_hat = torch.stack(p_ups).float().to(device).squeeze(1)
         Y = torch.tensor(fake_lables).float().to(device)
 
-        # Accumulated Gradients
-        losses = loss_computator(Y_hat, Y)
-
         # First create tensor from discounter_epr
         t_discounted_epr = torch.from_numpy(discounted_epr).squeeze(1).float().to(device)
 
-        # Multiply each log(yi|xi) with Ai (Advantage)
+        losses = loss_computator(Y_hat, Y)
+
+        # # Multiply each log(yi|xi) with Ai (Advantage)
         losses *= t_discounted_epr
         loss = torch.mean(losses)
-
-        loss.backward(torch.tensor(1.0 / batch_size).to(device))
-        # loss.backward()
-
+        loss = loss / batch_size # Normalize loss because of accumulated gradients
+        loss.backward()
         if episode_number % batch_size == 0:
             optimizer.step()
             optimizer.zero_grad()
