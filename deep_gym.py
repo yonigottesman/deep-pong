@@ -64,6 +64,10 @@ model.to(device)
 optimizer = torch.optim.RMSprop(model.parameters(), lr=lr, weight_decay=weight_decay)
 loss_computator = torch.nn.BCELoss(reduction='none')
 optimizer.zero_grad()
+MODEL_PATH = './model.pt'
+
+checkpoint = torch.load(MODEL_PATH)
+model.load_state_dict(checkpoint['model_state_dict'])
 
 while True:
     # env.render()
@@ -125,7 +129,12 @@ while True:
         print('resetting env. episode {} reward total was {}. running mean: {}'.format(episode_number,
                                                                                        reward_sum, running_reward))
 
-        if episode_number % 100 == 0: torch.save(model, './model.torch')
+        if episode_number % 10 == 0:
+            torch.save({
+                'model_state_dict': model.state_dict(),
+            }, MODEL_PATH)
+
+
         fake_lables, drs, p_ups = [], [], []  # reset array memory
         observation = env.reset()  # reset env
         prev_x = None
