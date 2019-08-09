@@ -4,23 +4,27 @@ import torch
 import torch.nn.functional as F
 
 class Brain(torch.nn.Module):
-    def __init__(self, D_in, H, D_out):
+    def __init__(self, D_in, H1, H2, D_out):
         super(Brain, self).__init__()
-        self.linear1 = torch.nn.Linear(D_in, H)
-        self.linear2 = torch.nn.Linear(H, D_out)
+        self.linear1 = torch.nn.Linear(D_in, H1)
+        self.linear2 = torch.nn.Linear(H1, H2)
+        self.linear3 = torch.nn.Linear(H2, D_out)
 
         # add regularization?
         # add batch norm
         # try more layers
         torch.nn.init.xavier_uniform_(self.linear1.weight)
         torch.nn.init.xavier_uniform_(self.linear2.weight)
+        torch.nn.init.xavier_uniform_(self.linear3.weight)
 
     def forward(self, x):
         a1 = self.linear1(x).clamp(min=0)
-        z2 = self.linear2(a1)
-        a2 = torch.sigmoid(z2)
-        return a2
+        a2 = self.linear2(a1).clamp(min=0)
+        z3 = self.linear3(a2)
+        a3 = torch.sigmoid(z3)
+        return a3
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def discount_rewards(r):
     """ take 1D float array of rewards and compute discounted reward """
@@ -44,6 +48,13 @@ def prepro(I):
     I[I != 0] = 1  # everything else (paddles, ball) just set to 1
     return I.astype(np.float).ravel()
 
+#Hyperparameters
+GAMMA = 0.99
+hidden_layer1_size = 200
+hidden_layer2_size = 200
+lr = 3e-3
+batch_size = 10
+weight_decay = 0
 
 prev_x = None  # used in computing the difference frame
 fake_lables, drs, p_ups = [], [], []
@@ -52,22 +63,20 @@ reward_sum = 0
 episode_number = 0
 env = gym.make('Pong-v0')
 observation = env.reset()
-GAMMA = 0.99
-# hyperparam
-hidden_layer_size = 200
-lr = 3e-3
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-batch_size = 10
-weight_decay = 0
-model = Brain(80 * 80, hidden_layer_size, 1)
+
+
+
+# model/optimizer/loss
+model = Brain(80 * 80, hidden_layer1_size, hidden_layer2_size, 1)
 model.to(device)
+# MODEL_PATH = './model.pt'
+# checkpoint = torch.load(MODEL_PATH)
+# model.load_state_dict(checkpoint['model_state_dict'])
+
 optimizer = torch.optim.RMSprop(model.parameters(), lr=lr, weight_decay=weight_decay)
+
 loss_computator = torch.nn.BCELoss(reduction='none')
 optimizer.zero_grad()
-MODEL_PATH = './model.pt'
-
-checkpoint = torch.load(MODEL_PATH)
-model.load_state_dict(checkpoint['model_state_dict'])
 
 while True:
     # env.render()
