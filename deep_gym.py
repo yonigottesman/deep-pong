@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+
 class Brain(torch.nn.Module):
     def __init__(self, D_in, H1, H2, D_out):
         super(Brain, self).__init__()
@@ -24,7 +25,9 @@ class Brain(torch.nn.Module):
         a3 = torch.sigmoid(z3)
         return a3
 
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 
 def discount_rewards(r):
     """ take 1D float array of rewards and compute discounted reward """
@@ -48,7 +51,8 @@ def prepro(I):
     I[I != 0] = 1  # everything else (paddles, ball) just set to 1
     return I.astype(np.float).ravel()
 
-#Hyperparameters
+
+# Hyperparameters
 GAMMA = 0.99
 hidden_layer1_size = 200
 hidden_layer2_size = 200
@@ -57,21 +61,23 @@ batch_size = 10
 weight_decay = 0
 
 prev_x = None  # used in computing the difference frame
-fake_lables, drs, p_ups = [], [], []
+fake_labels, drs, p_ups = [], [], []
 running_reward = None
 reward_sum = 0
 episode_number = 0
 env = gym.make('Pong-v0')
 observation = env.reset()
 
-
+resume = False  # resume from previous checkpoint?
 
 # model/optimizer/loss
 model = Brain(80 * 80, hidden_layer1_size, hidden_layer2_size, 1)
 model.to(device)
-# MODEL_PATH = './model.pt'
-# checkpoint = torch.load(MODEL_PATH)
-# model.load_state_dict(checkpoint['model_state_dict'])
+MODEL_PATH = './model.pt'
+
+if resume:
+    checkpoint = torch.load(MODEL_PATH)
+    model.load_state_dict(checkpoint['model_state_dict'])
 
 optimizer = torch.optim.RMSprop(model.parameters(), lr=lr, weight_decay=weight_decay)
 
@@ -93,7 +99,7 @@ while True:
     action = 2 if np.random.uniform() < aprob else 3  # roll the dice!
 
     y = 1.0 if action == 2 else 0.0  # a "fake label"
-    fake_lables.append(y)
+    fake_labels.append(y)
 
     observation, reward, done, info = env.step(action)
     reward_sum += reward
@@ -111,7 +117,7 @@ while True:
         discounted_epr /= np.std(discounted_epr)
 
         Y_hat = torch.stack(p_ups).float().to(device).squeeze(1)
-        Y = torch.tensor(fake_lables).float().to(device)
+        Y = torch.tensor(fake_labels).float().to(device)
 
         # First create tensor from discounter_epr
         t_discounted_epr = torch.from_numpy(discounted_epr).squeeze(1).float().to(device)
@@ -122,7 +128,7 @@ while True:
         losses *= t_discounted_epr
         loss = torch.mean(losses)
 
-
+        # loss in blog: sum(ai*logp):
         # losses2 = -(1-Y)*torch.log(1-Y_hat)+Y*torch.log(Y_hat)
         # losses2 *= t_discounted_epr
         # loss2 = torch.sum(losses2) / batch_size
@@ -143,18 +149,9 @@ while True:
                 'model_state_dict': model.state_dict(),
             }, MODEL_PATH)
 
-
-        fake_lables, drs, p_ups = [], [], []  # reset array memory
+        fake_labels, drs, p_ups = [], [], []  # reset array memory
         observation = env.reset()  # reset env
         prev_x = None
         reward_sum = 0
 
 env.close()
-
-
-# RMSprop 3e-3 628 - 16.16 mean
-
-
-# try 1e-1 or 1e-2 as wd in adam
-# add another layer to network
-# conv network
