@@ -5,32 +5,12 @@ import torch.nn.functional as F
 
 
 class DQN(torch.nn.Module):
-    # image size is 210,160,3 from gym and thats how i get 13824
-    def __init__(self):
-        super(DQN, self).__init__()
-        self.conv1 = torch.nn.Conv2d(3, 16, kernel_size=8, stride=4)
-        self.bn1 = torch.nn.BatchNorm2d(16)
-        self.conv2 = torch.nn.Conv2d(16, 32, kernel_size=4, stride=2)
-        self.bn2 = torch.nn.BatchNorm2d(32)
-        self.linear_out = torch.nn.Linear(13824, 1)
-
-    def forward(self, x):
-        a1 = F.relu(self.bn1(self.conv1(x)))
-        a2 = F.relu(self.bn2(self.conv2(a1)))
-        a3 = torch.sigmoid(self.linear_out(a2.view(a2.size(0), -1)))
-        return a3
-
-
-class Brain(torch.nn.Module):
     def __init__(self, D_in, H1, H2, D_out):
-        super(Brain, self).__init__()
+        super(DQN, self).__init__()
         self.linear1 = torch.nn.Linear(D_in, H1)
         self.linear2 = torch.nn.Linear(H1, H2)
         self.linear3 = torch.nn.Linear(H2, D_out)
 
-        # add regularization?
-        # add batch norm
-        # try more layers
         torch.nn.init.xavier_uniform_(self.linear1.weight)
         torch.nn.init.xavier_uniform_(self.linear2.weight)
         torch.nn.init.xavier_uniform_(self.linear3.weight)
@@ -88,8 +68,7 @@ observation = env.reset()
 resume = False  # resume from previous checkpoint?
 
 # model/optimizer/loss
-#model = Brain(80 * 80, hidden_layer1_size, hidden_layer2_size, 1)
-model = DQN()
+model = DQN(80 * 80, hidden_layer1_size, hidden_layer2_size, 1)
 model.to(device)
 MODEL_PATH = './model.pt'
 
@@ -106,19 +85,19 @@ while True:
     # env.render()
 
     # preprocess the observation, set input to network to be difference image
-    #cur_x = prepro(observation)
-    cur_x = observation.reshape(1, 3, 210, 160)
+    cur_x = prepro(observation)
     x = cur_x - prev_x if prev_x is not None else np.zeros_like(cur_x)
     prev_x = cur_x
 
     # make tensor
     x = torch.from_numpy(x).float().to(device)
-    aprob = model.forward(x).squeeze(0)
+    aprob = model.forward(x)
     p_ups.append(aprob)
     action = 2 if np.random.uniform() < aprob else 3  # roll the dice!
 
     y = 1.0 if action == 2 else 0.0  # a "fake label"
     fake_labels.append(y)
+
     observation, reward, done, info = env.step(action)
     reward_sum += reward
     drs.append(reward)  # record reward (has to be done after we call step() to get reward for previous action)
